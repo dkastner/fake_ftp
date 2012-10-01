@@ -56,17 +56,18 @@ describe FakeFtp::Server, 'setup' do
 end
 
 describe FakeFtp::Server, 'files' do
-  let(:file) { FakeFtp::File.new('filename', 34) }
   let(:server) { FakeFtp::Server.new(21212) }
 
-  before { server.instance_variable_set(:@files, [file]) }
+  before do
+    server.add_file('filename', '1234')
+  end
 
   it "returns filenames from :files" do
     server.files.should include('filename')
   end
 
   it "can be accessed with :file" do
-    server.file('filename').should == file
+    server.file('filename').data.should == '1234'
   end
 
   it "can reset files" do

@@ -18,17 +18,17 @@ module FakeFtp
       raise(Errno::EADDRINUSE, "#{passive_port}") if passive_port && is_running?(passive_port)
       @connection = nil
       @options = options
-      @files = []
+      @files = {}
       @mode = :active
       @path = ""
     end
 
     def files
-      @files.map(&:name)
+      @files.values.map(&:name)
     end
 
     def file(name)
-      @files.detect { |file| file.name == name }
+      @files.values.detect { |file| file.name == name }
     end
 
     def reset
@@ -36,7 +36,7 @@ module FakeFtp
     end
 
     def add_file(filename, data)
-      @files << FakeFtp::File.new(::File.basename(filename.to_s), data, @mode)
+      @files["#{@path}/#{filename}"] = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode)
     end
 
     def start
@@ -121,7 +121,7 @@ module FakeFtp
       respond_with('150 Listing status ok, about to open data connection')
       data_client = active? ? @active_connection : @data_server.accept
 
-      data_client.write(@files.map do |f|
+      data_client.write(@files.values.map do |f|
         "-rw-r--r--\t1\towner\tgroup\t#{f.bytes}\t#{f.created.strftime('%b %d %H:%M')}\t#{f.name}"
       end.join("\n"))
       data_client.close
