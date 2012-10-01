@@ -221,9 +221,9 @@ describe FakeFtp::Server, 'commands' do
 
     it "says OK to any CWD, CDUP, without doing anything" do
       client.puts "CWD somewhere/else"
-      client.gets.should == "250 OK!\r\n"
+      client.gets.should == "250 OK! /somewhere/else\r\n"
       client.puts "CDUP"
-      client.gets.should == "250 OK!\r\n"
+      client.gets.should == "250 OK! /somewhere\r\n"
     end
 
     it "does not respond to MKD" do

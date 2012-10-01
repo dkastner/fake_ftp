@@ -1,11 +1,10 @@
 module FakeFtp
   class File
-    attr_accessor :bytes, :name
+    attr_accessor :name, :bytes, :data, :path
     attr_writer :type
-    attr_accessor :data
     attr_reader :created
 
-    def initialize(name = nil, data = nil, type = nil)
+    def initialize(name = nil, data = nil, type = nil, path = nil)
       @created = Time.now
       @name = name
       @data = data
@@ -15,6 +14,7 @@ module FakeFtp
       @bytes = data_is_bytes ? data : data.to_s.length
       @data = data_is_bytes ? nil : data
       @type = type
+      @path = path
     end
 
     def data=(data)

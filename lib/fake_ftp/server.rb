@@ -20,6 +20,7 @@ module FakeFtp
       @options = options
       @files = []
       @mode = :active
+      @path = ""
     end
 
     def files
@@ -104,10 +105,15 @@ module FakeFtp
       '230 WHATEVER!'
     end
 
-    def _cwd(*args)
-      '250 OK!'
+    def _cdup(*args)
+      @path = @path.split('/').tap(&:pop).join('/')
+      "250 OK! #{@path}"
     end
-    alias :_cdup :_cwd
+
+    def _cwd(*args)
+      @path << "/#{args.first}"
+      "250 OK! #{@path}"
+    end
 
     def _list(*args)
       respond_with('425 Ain\'t no data port!') && return if active? && @active_connection.nil?
@@ -198,9 +204,12 @@ module FakeFtp
       respond_with('125 Do it!')
       data_client = active? ? @active_connection : @data_server.accept
 
-      data = data_client.recv(1024)
-      file = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode)
-      @files << file
+      data = ''
+      while some_content = data_client.gets
+        data << some_content
+      end
+      file = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode, @path)
+      @files["#{@path}/#{filename}"] = file
 
       data_client.close
       @active_connection = nil
