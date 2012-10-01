@@ -8,7 +8,7 @@ module FakeFtp
     attr_accessor :port, :passive_port
     attr_reader :mode
 
-    CMDS = %w[acct cwd cdup list nlst pass pasv port pwd quit stor retr type user]
+    CMDS = %w[acct cwd cdup list nlst pass pasv port pwd quit stor retr type user dele]
     LNBK = "\r\n"
 
     def initialize(control_port = 21, data_port = nil, options = {})
@@ -113,6 +113,11 @@ module FakeFtp
     def _cwd(*args)
       @path << "/#{args.first}"
       "250 OK! #{@path}"
+    end
+
+    def _dele(*args)
+      @files["#{@path}/#{args.first}"].try(:deleted=, true)
+      '250 Dat shit is gone!'
     end
 
     def _list(*args)

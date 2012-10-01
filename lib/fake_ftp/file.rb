@@ -1,6 +1,6 @@
 module FakeFtp
   class File
-    attr_accessor :name, :bytes, :data, :path
+    attr_accessor :name, :bytes, :data, :path, :deleted
     attr_writer :type
     attr_reader :created
 
@@ -29,5 +29,7 @@ module FakeFtp
     def active?
       @type == :active
     end
+
+    alias deleted? deleted
   end
 end
