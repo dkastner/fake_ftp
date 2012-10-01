@@ -227,9 +227,9 @@ describe FakeFtp::Server, 'commands' do
       client.gets.should == "250 OK! /somewhere\r\n"
     end
 
-    it "does not respond to MKD" do
+    it "responds to MKD" do
       client.puts "MKD some_dir"
-      client.gets.should == "500 Unknown command\r\n"
+      client.gets.should == "257 Change that folder, yo!\r\n"
     end
   end
 

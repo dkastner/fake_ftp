@@ -8,7 +8,7 @@ module FakeFtp
     attr_accessor :port, :passive_port
     attr_reader :mode
 
-    CMDS = %w[acct cwd cdup list nlst pass pasv port pwd quit stor retr type user dele]
+    CMDS = %w[acct cwd cdup list mkd nlst pass pasv port pwd quit stor retr type user dele]
     LNBK = "\r\n"
 
     def initialize(control_port = 21, data_port = nil, options = {})
@@ -133,6 +133,10 @@ module FakeFtp
       @active_connection = nil
 
       '226 List information transferred'
+    end
+
+    def _mkd(*args)
+      '257 Change that folder, yo!'
     end
 
     def _nlst(*args)
