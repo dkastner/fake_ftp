@@ -33,6 +33,7 @@ module FakeFtp
 
     def reset
       @files.clear
+      @path = ""
     end
 
     def add_file(filename, data)
