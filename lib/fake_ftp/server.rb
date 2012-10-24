@@ -36,8 +36,8 @@ module FakeFtp
       @path = ""
     end
 
-    def add_file(filename, data)
-      @files["#{@path}/#{filename}"] = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode)
+    def add_file(filename, data, path = @path)
+      @files["#{path}/#{filename}"] = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode, path)
     end
 
     def start
