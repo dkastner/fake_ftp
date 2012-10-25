@@ -112,7 +112,12 @@ module FakeFtp
     end
 
     def _cwd(*args)
-      @path << "/#{args.first}"
+      path = args.first
+      if path[0] == "/"
+        @path = path
+      else
+        @path << "/#{path}"
+      end
       "250 OK! #{@path}"
     end
 
