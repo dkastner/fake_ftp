@@ -242,15 +242,28 @@ module FakeFtp
     end
 
     def _rnfr(name = nil)
-      @rnfr_file = file(name)
-
-      '350 Waiting for rnto'
+      path, basename = ::File.split(name)
+      path = @path if path == "."
+      @rnfr_file = @files.values.detect { |file| file.name == basename and file.path == path }
+        
+      if @rnfr_file
+        '350 Waiting for rnto'
+      else
+        "550 Not found (path=#{path.inspect}, basename=#{basename.inspect}, files=#{@files.values.map { |file| [file.path, file.name] }.inspect})"
+      end
+    rescue => e
+      "501 #{e.message}"
     end
 
     def _rnto(name = nil)
-      @rnfr_file.name = name
+      path, basename = ::File.split(name)
+      path = @path if path == "."
+      @rnfr_file.name = basename
+      @rnfr_file.path = path
 
       '250 OK!'
+    rescue => e
+      "501 #{e.message}"
     end
 
     def active?
