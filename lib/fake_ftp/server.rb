@@ -186,7 +186,7 @@ module FakeFtp
     end
 
     def _pwd(*args)
-      "257 \"/pub\" is current directory"
+      "257 \"#@path\" is current directory"
     end
 
     def _quit(*args)
