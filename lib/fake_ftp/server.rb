@@ -20,7 +20,7 @@ module FakeFtp
       @options = options
       @files = {}
       @mode = :active
-      @path = ""
+      @path = "/pub"
     end
 
     def files
@@ -33,7 +33,7 @@ module FakeFtp
 
     def reset
       @files.clear
-      @path = ""
+      @path = "/pub"
     end
 
     def add_file(filename, data, path = @path)
