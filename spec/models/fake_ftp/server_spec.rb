@@ -56,17 +56,18 @@ describe FakeFtp::Server, 'setup' do
 end
 
 describe FakeFtp::Server, 'files' do
-  let(:file) { FakeFtp::File.new('filename', 34) }
   let(:server) { FakeFtp::Server.new(21212) }
 
-  before { server.instance_variable_set(:@files, [file]) }
+  before do
+    server.add_file('filename', '1234')
+  end
 
   it "returns filenames from :files" do
     server.files.should include('filename')
   end
 
   it "can be accessed with :file" do
-    server.file('filename').should == file
+    server.file('filename').data.should == '1234'
   end
 
   it "can reset files" do
@@ -221,14 +222,14 @@ describe FakeFtp::Server, 'commands' do
 
     it "says OK to any CWD, CDUP, without doing anything" do
       client.puts "CWD somewhere/else"
-      client.gets.should == "250 OK!\r\n"
+      client.gets.should == "250 OK! /somewhere/else\r\n"
       client.puts "CDUP"
-      client.gets.should == "250 OK!\r\n"
+      client.gets.should == "250 OK! /somewhere\r\n"
     end
 
-    it "does not respond to MKD" do
+    it "responds to MKD" do
       client.puts "MKD some_dir"
-      client.gets.should == "500 Unknown command\r\n"
+      client.gets.should == "257 Change that folder, yo!\r\n"
     end
   end
 

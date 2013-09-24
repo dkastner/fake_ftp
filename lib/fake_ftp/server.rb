@@ -8,7 +8,7 @@ module FakeFtp
     attr_accessor :port, :passive_port
     attr_reader :mode
 
-    CMDS = %w[acct cwd cdup list nlst pass pasv port pwd quit stor retr type user dele]
+    CMDS = %w[acct cwd cdup list mkd nlst pass pasv port pwd quit stor retr type user dele rnfr rnto]
     LNBK = "\r\n"
 
     def initialize(control_port = 21, data_port = nil, options = {})
@@ -18,24 +18,26 @@ module FakeFtp
       raise(Errno::EADDRINUSE, "#{passive_port}") if passive_port && is_running?(passive_port)
       @connection = nil
       @options = options
-      @files = []
+      @files = {}
       @mode = :active
+      @path = "/pub"
     end
 
     def files
-      @files.map(&:name)
+      @files.values.map(&:name)
     end
 
     def file(name)
-      @files.detect { |file| file.name == name }
+      @files.values.detect { |file| file.name == name }
     end
 
     def reset
       @files.clear
+      @path = "/pub"
     end
 
-    def add_file(filename, data)
-      @files << FakeFtp::File.new(::File.basename(filename.to_s), data, @mode)
+    def add_file(filename, data, path = @path)
+      @files["#{path}/#{filename}"] = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode, path)
     end
 
     def start
@@ -111,10 +113,25 @@ module FakeFtp
       '230 WHATEVER!'
     end
 
-    def _cwd(*args)
-      '250 OK!'
+    def _cdup(*args)
+      @path = @path.split('/').tap(&:pop).join('/')
+      "250 OK! #{@path}"
     end
-    alias :_cdup :_cwd
+
+    def _cwd(*args)
+      path = args.first
+      if path[0] == "/"
+        @path = path
+      else
+        @path << "/#{path}"
+      end
+      "250 OK! #{@path}"
+    end
+
+    def _dele(*args)
+      @files["#{@path}/#{args.first}"].try(:deleted=, true)
+      '250 Dat shit is gone!'
+    end
 
     def _list(*args)
       respond_with('425 Ain\'t no data port!') && return if active? && @active_connection.nil?
@@ -122,13 +139,17 @@ module FakeFtp
       respond_with('150 Listing status ok, about to open data connection')
       data_client = active? ? @active_connection : @data_server.accept
 
-      data_client.write(@files.map do |f|
+      data_client.write(@files.values.map do |f|
         "-rw-r--r--\t1\towner\tgroup\t#{f.bytes}\t#{f.created.strftime('%b %d %H:%M')}\t#{f.name}"
       end.join("\n"))
       data_client.close
       @active_connection = nil
 
       '226 List information transferred'
+    end
+
+    def _mkd(*args)
+      '257 Change that folder, yo!'
     end
 
     def _nlst(*args)
@@ -172,7 +193,7 @@ module FakeFtp
     end
 
     def _pwd(*args)
-      "257 \"/pub\" is current directory"
+      "257 \"#@path\" is current directory"
     end
 
     def _quit(*args)
@@ -205,9 +226,12 @@ module FakeFtp
       respond_with('125 Do it!')
       data_client = active? ? @active_connection : @data_server.accept
 
-      data = data_client.read(1024)
-      file = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode)
-      @files << file
+      data = ''
+      while some_content = data_client.gets
+        data << some_content
+      end
+      file = FakeFtp::File.new(::File.basename(filename.to_s), data, @mode, @path)
+      @files["#{@path}/#{filename}"] = file
 
       data_client.close
       @active_connection = nil
@@ -236,6 +260,31 @@ module FakeFtp
 
     def _user(name = '')
       (name.to_s == 'anonymous') ? '230 logged in' : '331 send your password'
+    end
+
+    def _rnfr(name = nil)
+      path, basename = ::File.split(name)
+      path = @path if path == "."
+      @rnfr_file = @files.values.detect { |file| file.name == basename and file.path == path }
+        
+      if @rnfr_file
+        '350 Waiting for rnto'
+      else
+        "550 Not found (path=#{path.inspect}, basename=#{basename.inspect}, files=#{@files.values.map { |file| [file.path, file.name] }.inspect})"
+      end
+    rescue => e
+      "501 #{e.message}"
+    end
+
+    def _rnto(name = nil)
+      path, basename = ::File.split(name)
+      path = @path if path == "."
+      @rnfr_file.name = basename
+      @rnfr_file.path = path
+
+      '250 OK!'
+    rescue => e
+      "501 #{e.message}"
     end
 
     def active?
